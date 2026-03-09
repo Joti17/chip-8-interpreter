@@ -1,0 +1,11 @@
+*.swp
+.idea
+.idea/*
+.vscode
+.vscode/*
+.venv
+.venv/*
+*.asm
+*.rom
+*.BIN
+*.hex
