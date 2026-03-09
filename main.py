@@ -79,6 +79,24 @@ KEY_MAP = {
     0xB: pygame.K_c,
     0xF: pygame.K_v
 }
+KEY_MAP_QWERTY = {
+    0x1: pygame.K_1,
+    0x2: pygame.K_2,
+    0x3: pygame.K_3,
+    0xC: pygame.K_4,
+    0x4: pygame.K_q,
+    0x5: pygame.K_w,
+    0x6: pygame.K_e,
+    0xD: pygame.K_r,
+    0x7: pygame.K_a,
+    0x8: pygame.K_s,
+    0x9: pygame.K_d,
+    0xE: pygame.K_f,
+    0xA: pygame.K_z,
+    0x0: pygame.K_x,
+    0xB: pygame.K_c,
+    0xF: pygame.K_v
+}
 
 # The chip-8 has 16-bit operands
 # Don't change, hard limit by the CHIP-8 chipset
@@ -112,7 +130,7 @@ DT = 0
 ST = 0
 
 # Pygame Screen
-SCALE = 16 # Every pixel is 8x the normal size
+SCALE = 16 # Every pixel is 16x the normal size
 
 screen = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE))
 chip8_surface = pygame.Surface((WIDTH, HEIGHT))
@@ -650,13 +668,14 @@ if __name__ == "__main__":
     screen = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE))
     argv = sys.argv
     if len(argv) > max_arguments:
-        print("Too many arguments Correct Usage: \n python <filename.py> <rom.rom/rom.ch8> <clock-speed: default=700>")
+        print("Too many arguments Correct Usage: \n python3 <filename.py> <rom.rom/rom.ch8> <clock-speed: default=700> <optionally: z for qwerty keymap and y for qwertz keymap>")
     if len(argv) >= 2:
         read_program(argv[1])
         if len(argv) >= 3:
             clock_speed = int(argv[2])
-
-    read_program("TETRIS.bin")
+            if len(argv) >= 4:
+                if argv[3] == "z":
+                    KEY_MAP = KEY_MAP_QWERTY
     sound_channel = None
     clock = pygame.time.Clock()
     running: bool = True
@@ -666,12 +685,11 @@ if __name__ == "__main__":
                 running = False
                 pygame.quit()
                 sys.exit()
-        #  Every Instruction/Not Time Base - Implemented: ❌
-        # for _ in range(clock_speed):
+        #  Every Instruction/Not Time Base - Implemented: ✅ 
         for _ in range(int(clock_speed/60)):
             read_and_execute_next_operand()
             
-        # Time Dependant - Implemented: ❌
+        # Time Dependant - Implemented: ✅ 
         if DT > 0:
             DT -= 1
         if ST > 0:
