@@ -7,12 +7,22 @@ Because of its small instruction set and simple architecture, CHIP-8 is commonly
 This emulator aims to provide clean and understandable implementation of the CHIP-8-virtual machine.
 
 ## Features
+
+### Emulator
 - Complete CHIP-8 instruction set
 - Graphical display (64x32 resolution scaled to 16x)
 - Keyboard input mapping
 - Sound and delay timers
 - ROM loading
 - Debugging output for instructions
+
+### Assembler
+- Convert CHIP-8 assembly into binary ROM files
+- Supports labels and comments
+
+### Disassembler
+- Convert CHIP-8 back into the closest guess of the original assembly
+- Useful for analysis and debugging
 
 ## Requirements
 - Python
@@ -23,11 +33,32 @@ pip3 install -r requirements.txt
 ## Running the Emulator
 Run the Emulator with a CHIP-8 ROM:
 ```
-python3 <filename.py> <rom.rom/rom.ch8/rom.bin> <clock-speed: default=700>
+python3 <filename.py> <rom.rom/rom.ch8/rom.bin> <clock-speed: default=700> <optionally: z for qwerty keymap and y for qwertz keymap>
 ```
 Example ROMs in this repository are:
 - Tetris
-- pong
+- Pong
+
+## Running the Assembler
+Assemble a CHIP-8 assembly file into a ROM
+```
+python3 <assembler.py> <source.asm> <output.ch8>
+```
+Example:
+```
+python3 assembler/assembler.py src/pong.asm roms/pong.ch8
+```
+## Running the Disassembler
+Disassemble a CHIP-8 ROM into human-readable assembly:
+```
+python3 <disassembler.py> <input.ch8/rom/bin> <output.asm/S>
+```
+Example:
+```
+python3 disassembler/disassemble.py roms/pong.rom roms/pong.asm
+```
+
+
 ## CHIP-8 Architecture
 
 The CHIP-8 system contains:
@@ -60,7 +91,7 @@ q w e r
 a s d f
 y x c v
 ```
-For QWERTY users I'll add an option for more keyboard layouts in the Future
+For QWERTY users consider adding z at the end of the execution command to test the emulator
 
 ## Instruction Example
 A CHIP-8 Instruction is 2 bytes long(16bits).
