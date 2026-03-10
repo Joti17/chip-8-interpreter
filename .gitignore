@@ -1,6 +1,9 @@
 *.swp
-.idea
-.vscode
-venv
+.idea/
+.vscode/
+venv/
 *.hex
-__pycache__
+__pycache__/
+*.pyo
+*.pyc
+*.pyd

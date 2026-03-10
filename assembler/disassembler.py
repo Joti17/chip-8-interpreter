@@ -94,7 +94,7 @@ def disassemble(lines: bytearray) -> str:
             elif LB == 0x0A:
                 file += f"wk V{hex(vx)}\n"
             elif LB == 0x15:
-                file += f"tds V{hex(vx)}\n"
+                file += f"sdr V{hex(vx)}\n"
             elif LB == 0x18:
                 file += f"sst V{hex(vx)}\n"
             elif LB == 0x1E:

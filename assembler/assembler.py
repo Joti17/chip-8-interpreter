@@ -405,7 +405,7 @@ def wait_for_key(line: list[str]):
 def set_DT(line: list[str]):
     """
     Structure of DT = VX instruction:
-    tds x - where x is VX
+    sdr x - where x is VX
     Hexadecimal:
     0xFX15
     """
@@ -537,7 +537,7 @@ if __name__ == "__main__":
     "getd": set_I_digit,    # FX29
 
     "sdt": store_delay_vx,  # FX07
-    "tds": set_DT,          # FX15
+    "sdr": set_DT,          # FX15
     "sst": set_ST,          # FX18
 
     "wk": wait_for_key,     # FX0A
