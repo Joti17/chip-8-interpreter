@@ -663,12 +663,16 @@ def scale(scale: int):
     pygame.display.flip()
 
 
-max_arguments = 3
+max_arguments = 4
 if __name__ == "__main__":
     screen = pygame.display.set_mode((WIDTH * SCALE, HEIGHT * SCALE))
     argv = sys.argv
+    if len(argv) == 1:
+        print("Correct Usage: \n python3 <filename.py> <rom.rom/rom.ch8> <clock-speed: default=700> <optionally: z for qwerty keymap and y for qwertz keymap>")
+        sys.exit(-1)
     if len(argv) > max_arguments:
         print("Too many arguments Correct Usage: \n python3 <filename.py> <rom.rom/rom.ch8> <clock-speed: default=700> <optionally: z for qwerty keymap and y for qwertz keymap>")
+        sys.exit(-1)
     if len(argv) >= 2:
         read_program(argv[1])
         if len(argv) >= 3:
