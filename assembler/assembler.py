@@ -126,7 +126,7 @@ def skip_if_not_equals(line: list[str]):
     """
     global output_hex
     vx = int(line[1].strip(",").replace("V", ""), 16) & 0xF
-    nn = int(line[2], 16) & 0xFF
+    nn = int(line[2].upper().replace("V", ""), 0x10) & 0xFF
     opcode = 0x4000 | (vx << 8) | nn
     append_opcode(opcode)
 
@@ -163,9 +163,10 @@ def add(line: list[str]):
     Hexadecimal:
     0x7XNN
     """
+    # No Label support, because NN is too small for the area the assembler has access at
     global output_hex
     vx = int(line[1].strip(",").upper().replace("V", ""), 0x10) & 0xF
-    nn = int(line[2], 0x10) & 0xFF
+    nn = int(line[2].upper().replace("V", ""), 0x10) & 0xFF
     opcode = 0x7000 | (vx << 8) | nn
     append_opcode(opcode)
 
@@ -296,7 +297,7 @@ def store_nnn_in_i(line: list[str]):
     Hexadecimal:
     0xANNN
     """
-    global output_hex
+    global output_hex, pc
     target = line[1].strip(",")
     
     if target in labels:
@@ -305,7 +306,7 @@ def store_nnn_in_i(line: list[str]):
         try:
             nnn = int(target, 0)
         except ValueError:
-            print(f"Fehler: Label/Adress '{target}' not found!")
+            print(f"Fehler: Label/Adress '{target}' not found! Line: {line} PC: {hex(pc)}")
             sys.exit(-1)
             
     opcode = 0xA000 | (nnn & 0xFFF)
@@ -563,7 +564,13 @@ if __name__ == "__main__":
         else:
             print(f"Unknown Instruction: {memonic}")        
 
-    with open(output if output.endswith(".ch8") else output + ".ch8", "wb") as f:
+    if len(argv) >= 3:
+        output_file = output
+    else:
+        output_file = os.path.splitext(file)[0] + ".ch8"
+
+    with open(output_file, "wb") as f:
         f.write(output_hex)
-    print(f"Successfully assembled: {output}")
+
+    print(f"Successfully assembled: {output_file}")
 
