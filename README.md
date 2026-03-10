@@ -164,7 +164,7 @@ Sets I as pointer to the digit 'A'
   ```
   https://chat.openai.com/
   ```
-- Tests:
+- Tests: - All completed successfully
   ```
   https://github.com/corax89/chip8-test-rom/
   ```
