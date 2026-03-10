@@ -164,5 +164,12 @@ Sets I as pointer to the digit 'A'
   ```
   https://chat.openai.com/
   ```
+- Tests:
+  ```
+  https://github.com/corax89/chip8-test-rom/
+  ```
+  ```
+  https://github.com/Timendus/chip8-test-suite
+  ```
 ## License
 MIT License

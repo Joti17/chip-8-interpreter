@@ -98,6 +98,15 @@ KEY_MAP_QWERTY = {
     0xF: pygame.K_v
 }
 
+
+# Quirk Settings - Set these to match your test ROM requirements
+# Wont be adding that to command prompt, you have to change here
+QUIRKS = {
+    "shift": True,          # False = Shift VX in-place (SCHIP), True = Set VX to VY shifted (VIP)
+    "memory": True,         # False = FX55/FX65 does NOT increment I, True = increments I
+    "display_wait": True    # False = No wait, True = Drawing waits for next 60Hz frame (DXYN)
+}
+
 # The chip-8 has 16-bit operands
 # Don't change, hard limit by the CHIP-8 chipset
 MEMORY_SIZE = 4096
@@ -217,7 +226,8 @@ def read_program(file: str, offset: int=0x200) -> None:
 read_program(FONT_PATH, offset=0x050) # Load the font into memory at 0x050
 
 should_draw = True
-def read_and_execute_next_operand():
+def read_and_execute_next_operand() -> bool:
+    """Returns boolean, because of the display_wait quirk"""
     global pc, memory, should_draw
     pc_incremented = False
     if pc + 1 >= len(memory):
@@ -237,6 +247,9 @@ def read_and_execute_next_operand():
         n = operand & 0xF
         draw(vx, vy, n=n)
         should_draw = True
+        if QUIRKS["display_wait"]:
+            pc += 2
+            return True
     elif operand >= 0x1000 and operand < 0x2000:
         mem_address = operand & 0xFFF
         jump(mem_address)
@@ -284,11 +297,11 @@ def read_and_execute_next_operand():
         elif LSB == 0x5:
             sub_vy_from_vx(vx, vy)
         elif LSB == 0x6:
-            shift_right(vx)
+            shift_right(vx, vy)
         elif LSB == 0x7:
             sub_vx_from_vy(vx, vy)
         elif LSB == 0xE:
-            shift_left(vx)
+            shift_left(vx, vy)
     elif operand >= 0x9000 and operand < 0xA000:
         vx = (operand >> 8) & 0xF
         vy = (operand >> 4) & 0xF
@@ -333,6 +346,7 @@ def read_and_execute_next_operand():
 
     if not pc_incremented:
         pc += 2 
+    return False
 
 
 # MEMORY OPERATION SECTION
@@ -425,6 +439,7 @@ def set_vx_vx_OR_vy(vx: int, vy: int):
     """
     global Vx
     Vx[vx] = Vx[vx] | Vx[vy]
+    Vx[0xF] = 0 # Reset VF, because of test
 
 def set_vx_vx_AND_vy(vx: int, vy: int):
     """
@@ -432,6 +447,7 @@ def set_vx_vx_AND_vy(vx: int, vy: int):
     """
     global Vx
     Vx[vx] &= Vx[vy]
+    Vx[0xF] = 0 # Reset VF, because of test
 
 def set_vx_vx_XOR_vy(vx: int, vy: int):
     """
@@ -439,6 +455,7 @@ def set_vx_vx_XOR_vy(vx: int, vy: int):
     """
     global Vx
     Vx[vx] ^= Vx[vy]
+    Vx[0xF] = 0 # Reset VF, because of test
 
 def add_vy_to_vx(vx: int, vy: int):
     """
@@ -446,53 +463,55 @@ def add_vy_to_vx(vx: int, vy: int):
     """
     global Vx
     total = Vx[vx] + Vx[vy]
-    if total > 0xFF:
-        Vx[0xF] = 1
-    else:
-        Vx[0xF] = 0
+    flag = 1 if total > 0xFF else 0
     Vx[vx] = total & 0xFF
+    Vx[0xF] = flag
 
 def sub_vy_from_vx(vx: int, vy: int):
     """
     8XY5: Subtract the value of register VY from register VX. Set VF to 00 if a borrow occurs. Set VF to 01 if a borrow does not occur
     """
     global Vx
-    if Vx[vx] >= Vx[vy]:
-        Vx[0xF] = 1
-        Vx[vx] = Vx[vx] - Vx[vy]
-    else:
-        Vx[0xF] = 0
-        Vx[vx] = (Vx[vx] - Vx[vy]) & 0xFF
+    flag = 1 if Vx[vx] >= Vx[vy] else 0
+    Vx[vx] = (Vx[vx] - Vx[vy]) & 0xFF
+    Vx[0xF] = flag
 
-def shift_right(vx: int):
+def shift_right(vx: int, vy: int):
     """
     8XY6: Store the value of register VY shifted right one bit in register VX. Set register VF to the least significant bit prior to the shift
     """
     global Vx
-    v = Vx[vx] 
-    Vx[0xF] = v & 0x1
-    Vx[vx] = v >> 1
+    if QUIRKS["shift"]:
+        val = Vx[vy]
+    else:
+        val = Vx[vx]
+        
+    flag = val & 0x1
+    Vx[vx] = (val >> 1) & 0xFF
+    Vx[0xF] = flag
 
 def sub_vx_from_vy(vx: int, vy: int):
     """
     8XY7: Set register VX to the value of VY minus VX. Set VF to 00 if a borrow occurs. Set VF to 01 if a borrow does not occur
     """
     global Vx
-    if Vx[vy] >= Vx[vx]:
-        Vx[0xF] = 1          
-        Vx[vx] = Vx[vy] - Vx[vx]
-    else:
-        Vx[0xF] = 0          
-        Vx[vx] = (Vx[vy] - Vx[vx]) & 0xFF  
+    flag = 1 if Vx[vy] >= Vx[vx] else 0
+    Vx[vx] = (Vx[vy] - Vx[vx]) & 0xFF
+    Vx[0xF] = flag 
 
-def shift_left(vx: int):
+def shift_left(vx: int, vy: int):
     """
     8XYE: Store the value of register VY shifted left one bit in register VX. Set register VF to the most significant bit prior to the shift
     """
     global Vx
-    v = Vx[vx]
-    Vx[0xF] = (v >> 7) & 0x1 # most significant bit
-    Vx[vx] = (v << 1) & 0xFF
+    if QUIRKS["shift"]:
+        val = Vx[vy]
+    else:
+        val = Vx[vx]
+        
+    flag = (val >> 7) & 0x1
+    Vx[vx] = (val << 1) & 0xFF
+    Vx[0xF] = flag
 
 # KEYBOARD INPUT
 def skip_if_key(vx: int):
@@ -509,26 +528,30 @@ def skip_if_no_key(vx: int):
     if not keys[KEY_MAP[Vx[vx]]]:
         pc += 2
 
+# global, because it has to last over multiple calls
+waiting_for_release = -1
 def wait_keypress_and_store(vx: int):
     """
     FX0A: Wait for a keypress and store the result in register VX
     """
-    global Vx, KEY_MAP, paused
-    paused = True
-    while paused:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                for chip8_key, scancode in KEY_MAP.items():
-                    if event.scancode == scancode:
-                        Vx[vx] = chip8_key
-                        paused = False
-                        break
-        pygame.time.delay(1)
+    global Vx, pc, KEY_MAP, waiting_for_release
+    
+    keys = pygame.key.get_pressed()
 
-
+    if waiting_for_release == -1:
+        for chip8_key, pygame_key in KEY_MAP.items():
+            if keys[pygame_key]:
+                waiting_for_release = chip8_key
+                Vx[vx] = chip8_key
+                break
+        pc -= 2
+    else:
+        target_pygame_key = KEY_MAP[waiting_for_release]
+        
+        if keys[target_pygame_key]:
+            pc -= 2
+        else:
+            waiting_for_release = -1
 
 # RANDOM
 def set_vx_random(vx: int, nn: int):
@@ -565,7 +588,7 @@ def add_vx_to_I(vx: int):
     FX1E – I += VX (rare, depends on implementation)
     """
     global Vx, I
-    I += Vx[vx]
+    I = (I + Vx[vx]) & 0xFFFF
 
 def point_I_to_digit(vx: int):
     """
@@ -584,7 +607,7 @@ def binary_to_bcd(vx: int):
     """
     global Vx, I, memory
     num = Vx[vx]
-    memory[I] = (num // 100)
+    memory[I] = num // 100
     memory[I+1] = (num // 10) % 10
     memory[I+2] = num % 10
 
@@ -592,10 +615,11 @@ def store_v0_to_vx(vx: int):
     # FX55 – Store V0-VX in memory (if saving state)
     # Size of register = 1 byte
     global Vx, memory, I
-    max = vx
-    for reg in range(max + 1):
+    for reg in range(vx + 1):
         memory[I + reg] = Vx[reg]
-    I = I + vx + 1
+    
+    if QUIRKS["memory"]:
+        I = I + vx + 1
 
 def restore_v0_to_vx(vx: int):
     # FX65 – Load V0-VX from memory
@@ -603,7 +627,9 @@ def restore_v0_to_vx(vx: int):
     max = vx
     for reg in range(max + 1):
         Vx[reg] = memory[I + reg]
-    I = I + vx + 1
+    
+    if QUIRKS["memory"]:
+        I = I + vx + 1
 
 # SCREEN
 def cls() -> None:
@@ -626,19 +652,20 @@ def draw(vx: int, vy:int, n: int) -> None:
     global Vx, gfx, I, memory
     x_start = Vx[vx] % 64
     y_start = Vx[vy] % 32
-    VF = 0
+    Vx[0xF] = 0
     
     for row in range(n):
+        if y_start + row >= 32: break
         sprite_byte = memory[I+row]
         for col in range(8):
+            if x_start + col >= 64: break
             sprite_pixel = (sprite_byte >> (7-col)) & 1
             if sprite_pixel:
-                idx = ((y_start + row) % 32) * 64 + ((x_start + col) % 64)
+                idx = (y_start + row) * 64 + (x_start + col)
                 if gfx[idx] == 1:
-                    VF = 1
+                    Vx[0xF] = 1
                 gfx[idx] ^= 1
-
-    Vx[0xF] = VF            
+          
     
     
 
@@ -691,7 +718,8 @@ if __name__ == "__main__":
                 sys.exit()
         #  Every Instruction/Not Time Base - Implemented: ✅ 
         for _ in range(int(clock_speed/60)):
-            read_and_execute_next_operand()
+            if read_and_execute_next_operand():
+                break
             
         # Time Dependant - Implemented: ✅ 
         if DT > 0:
